@@ -26,10 +26,7 @@ async fn main() {
     log.info("Inicializando Tokio Scheduler");
     let (sched, submit_rx, cancel_rx) = Scheduler::new();
 
-    let tasks   = sched.tasks.clone();
-    let heap    = sched.ready_heap.clone();
-    let seq     = sched.seq.clone();
-
+    let (tasks, heap, seq) = sched.dispatch_handles();
     tokio::spawn(Scheduler::run_dispatch_loop(tasks, heap, seq, submit_rx, cancel_rx));
 
     sched.submit("kernel_init",   Priority::RealTime, 50).await;
