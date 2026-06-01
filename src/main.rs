@@ -1,28 +1,23 @@
-use anyhow::Result;
+mod scheduler;
+
 use scheduler::{HeapEntry, Priority, Scheduler, Task};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::collections::BinaryHeap;
-use std::sync::Mutex;
 use tokio::sync::mpsc;
 
 #[tokio::main]
-async fn main() -> Result<()> {
-    let sched = Scheduler::new();
-    let heap = Arc::new(Mutex::new(BinaryHeap::new()));
-    let seq = Arc::new(AtomicU64::new(0));
-    let (submit_tx, submit_rx) = mpsc::channel(128);
-    let (cancel_tx, cancel_rx) = mpsc::channel(128);
+async fn main() {
+    let scheduler = Arc::new(Scheduler::new());
+    let (tx, rx) = mpsc::channel::<Task>(100);
 
-    let sched_clone = Arc::new(sched);
-    let heap_clone = Arc::clone(&heap);
-    let seq_clone = Arc::clone(&seq);
-
+    let sched_clone = Arc::clone(&scheduler);
     tokio::spawn(async move {
-        sched_clone
-            .run(heap_clone, seq_clone, submit_rx, cancel_rx)
-             .await;
+        sched_clone.run(rx).await;
     });
 
-    Ok(());
+    // Teste rápido
+    scheduler.submit("task1".to_string(), Priority::High, 10).await;
+    scheduler.submit("task2".to_string(), Priority::Normal, 5).await;
+    
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    scheduler.report().await;
 }
