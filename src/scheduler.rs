@@ -144,9 +144,7 @@ pub struct Scheduler {
 }
 
 impl Scheduler {
-    pub fn new(pub fn dispatch_handles(
-    &self,
-) -> (Arc<Mutex<Vec<Task>>>, Arc<Mutex<BinaryHeap<HeapEntry>>>, Arc<Mutex<u64>>) {
+    pub fn new(dispatch_handles: fn(&Self) -> (Arc<Mutex<Vec<Task>>>, Arc<Mutex<BinaryHeap<HeapElem>>>)) -> (Self, mpsc::Receiver<Task>, mpsc::Receiver<TaskId>) {
     (Arc::clone(&self.tasks), Arc::clone(&self.ready_heap), Arc::clone(&self.seq))
 }) -> (Self, mpsc::Receiver<Task>, mpsc::Receiver<TaskId>) {
         let (submit_tx, submit_rx) = mpsc::channel(256);
@@ -287,9 +285,9 @@ impl Scheduler {
         println!("╠══════════════════════════════════════════╣");
         for t in ts.iter() {
             println!(
-                "║ [{:>4}] {:<16} pri={:?:<8} {:?}",
-                t.id, t.name, t.priority, t.state
-            );
+    "|| [{:>4}] {:<16} pri={:?} {:?}",
+    t.id, t.name, t.priority, t.state
+);
         }
         println!("╚══════════════════════════════════════════╝\n");
     }
