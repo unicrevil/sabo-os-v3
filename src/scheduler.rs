@@ -1,22 +1,14 @@
+use std::collections::{BinaryHeap, HashMap};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
-use std::collections::BinaryHeap;
-use std::cmp::Ordering;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Priority {
-    RealTime,
-    High,
-    Normal,
-    Low,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TaskState {
-    Ready,
-    Running,
-    Blocked,
-    Completed,
+    RealTime = 0,
+    High = 1,
+    Normal = 2,
+    Low = 3,
+    Idle = 4,
 }
 
 #[derive(Debug, Clone)]
@@ -24,11 +16,10 @@ pub struct Task {
     pub id: u64,
     pub name: String,
     pub priority: Priority,
-    pub state: TaskState,
     pub ticks: u32,
 }
 
-#[derive(Debug, Clone, Eq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct HeapEntry {
     pub priority: Priority,
     pub seq: u64,
@@ -36,40 +27,33 @@ pub struct HeapEntry {
 }
 
 impl Ord for HeapEntry {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match self.priority.cmp(&other.priority) {
-            Ordering::Equal => other.seq.cmp(&self.seq),
-            ord => ord,
-        }
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // Menor priority = maior prioridade. Se empatar, menor seq ganha
+        other.priority.cmp(&self.priority)
+            .then_with(|| other.seq.cmp(&self.seq))
     }
 }
 
 impl PartialOrd for HeapEntry {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl PartialEq for HeapEntry {
-    fn eq(&self, other: &Self) -> bool {
-        self.priority == other.priority && self.seq == other.seq
-    }
-}
-
 pub struct Scheduler {
-    pub tasks: Arc<Mutex<Vec<Task>>>,
-    pub ready_heap: Arc<Mutex<BinaryHeap<HeapEntry>>>,
-    pub seq: Arc<Mutex<u64>>,
-    next_id: Arc<Mutex<u64>>,
+    pub tasks: Mutex<HashMap<u64, Task>>,
+    pub ready_heap: Mutex<BinaryHeap<HeapEntry>>,
+    pub seq: Mutex<u64>,
+    next_id: Mutex<u64>,
 }
 
 impl Scheduler {
     pub fn new() -> Self {
         Self {
-            tasks: Arc::new(Mutex::new(Vec::new())),
-            ready_heap: Arc::new(Mutex::new(BinaryHeap::new())),
-            seq: Arc::new(Mutex::new(0)),
-            next_id: Arc::new(Mutex::new(1)),
+            tasks: Mutex::new(HashMap::new()),
+            ready_heap: Mutex::new(BinaryHeap::new()),
+            seq: Mutex::new(0),
+            next_id: Mutex::new(1),
         }
     }
 
@@ -83,27 +67,26 @@ impl Scheduler {
             id,
             name: name.to_string(),
             priority,
-            state: TaskState::Ready,
             ticks,
         };
 
         let mut seq_guard = self.seq.lock().await;
-        let seq = *seq_guard;
+        let seq_val = *seq_guard;
         *seq_guard += 1;
         drop(seq_guard);
 
-        self.tasks.lock().await.push(task);
-        self.ready_heap.lock().await.push(HeapEntry {
+        let entry = HeapEntry {
             priority,
-            seq,
+            seq: seq_val,
             task_id: id,
-        });
+        };
 
-        println!("[SUBMIT] {} id={} prio={:?}", name, id, priority);
+        self.tasks.lock().await.insert(id, task);
+        self.ready_heap.lock().await.push(entry);
     }
 
     pub async fn run(
-        self,
+        self: Arc<Self>,  // <-- BALA DE PRATA MATA E0382
         heap: Arc<Mutex<BinaryHeap<HeapEntry>>>,
         seq: Arc<Mutex<u64>>,
         mut submit_rx: mpsc::Receiver<Task>,
@@ -113,17 +96,21 @@ impl Scheduler {
             tokio::select! {
                 Some(task) = submit_rx.recv() => {
                     let mut seq_guard = seq.lock().await;
-                    let s = *seq_guard;
+                    let seq_val = *seq_guard;
                     *seq_guard += 1;
                     drop(seq_guard);
-                    heap.lock().await.push(HeapEntry {
+
+                    let entry = HeapEntry {
                         priority: task.priority,
-                        seq: s,
+                        seq: seq_val,
                         task_id: task.id,
-                    });
+                    };
+
+                    self.tasks.lock().await.insert(task.id, task);
+                    heap.lock().await.push(entry);
                 }
                 Some(id) = cancel_rx.recv() => {
-                    println!("[CANCEL] task id={}", id);
+                    self.tasks.lock().await.remove(&id);
                 }
                 else => break,
             }
@@ -132,9 +119,7 @@ impl Scheduler {
 
     pub async fn report(&self) {
         let tasks = self.tasks.lock().await;
-        println!("\n=== SCHEDULER REPORT ===");
-        for t in tasks.iter() {
-            println!("Task {}: {} prio={:?} state={:?} ticks={}", t.id, t.name, t.priority, t.state, t.ticks);
-        }
+        let heap = self.ready_heap.lock().await;
+        println!("Scheduler report: {} tasks, {} ready", tasks.len(), heap.len());
     }
-    }
+                }
