@@ -1,8 +1,8 @@
+use std::collections::BinaryHeap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
-use std::collections::BinaryHeap;
 mod scheduler;
-use scheduler::{Scheduler, Priority, Task, HeapEntry};
+use scheduler::{HeapEntry, Priority, Scheduler, Task};
 
 #[tokio::main]
 async fn main() {
