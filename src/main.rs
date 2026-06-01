@@ -49,4 +49,4 @@ async fn main() {
     print_comparison_report(runner.results());
 
     log.info("SABO OS v3 - shutdown limpo. Até a próxima. 🚀");
-      }
+    }
