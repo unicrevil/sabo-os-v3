@@ -3,7 +3,7 @@
 // Entry point: wires scheduler + asm + benchmark + logger
 // ============================================================
 
-#![feature(asm_const)]
+
 
 mod scheduler;
 mod asm_opt;
