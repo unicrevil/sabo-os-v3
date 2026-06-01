@@ -28,24 +28,24 @@ pub struct HeapEntry {
 
 impl Ord for HeapEntry {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-    other
-        .priority
-        .cmp(&self.priority)
-        .then_with(|| other.seq.cmp(&self.seq))
+        other
+            .priority
+            .cmp(&self.priority)
+            .then_with(|| other.seq.cmp(&self.seq))
     }
+}
 
 impl PartialOrd for HeapEntry {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
-    
+    }
 }
 
-let task = Task {
-    id,
-    name,
-    priority,
-    ticks_left: ticks,
-};
+pub struct Scheduler {
+    pub tasks: Mutex<HashMap<u64, Task>>,
+    pub ready_heap: Mutex<BinaryHeap<HeapEntry>>,
+    pub seq: Mutex<u64>,
+    pub next_id: Mutex<u64>,
 }
 
 impl Scheduler {
@@ -53,46 +53,64 @@ impl Scheduler {
         Self {
             tasks: Mutex::new(HashMap::new()),
             ready_heap: Mutex::new(BinaryHeap::new()),
-            let entry = HeapEntry {
-    priority,
-    seq: seq_val,
-    task_id: id,
-};
+            seq: Mutex::new(0),
+            next_id: Mutex::new(0),
+        }
+    }
+
+    pub async fn submit(&self, name: String, priority: Priority, ticks: u32) -> u64 {
+        let mut id_guard = self.next_id.lock().await;
+        let id = *id_guard;
+        *id_guard += 1;
         drop(id_guard);
 
-        let task = Task { id, name, priority, ticks_left: ticks };
+        let task = Task {
+            id,
+            name,
+            priority,
+            ticks_left: ticks,
+        };
 
         let mut seq_guard = self.seq.lock().await;
         let seq_val = *seq_guard;
         *seq_guard += 1;
         drop(seq_guard);
-        let entry = HeapEntry {
-         priority,
-         seq: seq_val,
-         task_id: id,
-      };
 
-     drop(id_guard);
+        let entry = HeapEntry {
+            priority,
+            seq: seq_val,
+            task_id: id,
+        };
+
+        let mut tasks_guard = self.tasks.lock().await;
+        tasks_guard.insert(id, task);
+        drop(tasks_guard);
+
+        let mut heap_guard = self.ready_heap.lock().await;
+        heap_guard.push(entry);
+        drop(heap_guard);
+
+        id
     }
 
     pub async fn pop(&self) -> Option<Task> {
         let mut heap_guard = self.ready_heap.lock().await;
-        let entry = heap_guard.pop()?; // ← BinaryHeap::pop já faz heapify
+        let entry = heap_guard.pop()?;
         drop(heap_guard);
 
         let mut tasks_guard = self.tasks.lock().await;
         tasks_guard.remove(&entry.task_id)
     }
-  pub async fn run(self: Arc<Self>, mut rx: mpsc::Receiver<Task>) {
+
+    pub async fn run(self: Arc<Self>, mut rx: mpsc::Receiver<Task>) {
         while let Some(task) = rx.recv().await {
             self.submit(task.name, task.priority, task.ticks_left).await;
         }
     }
 
-pub async fn report(&self) {
-    let tasks = self.tasks.lock().await;
-    let heap = self.ready_heap.lock().await;
-   println!("Scheduler report: {} tasks, {} ready", tasks.len(), heap.len());
-}
-}
+    pub async fn report(&self) {
+        let tasks = self.tasks.lock().await;
+        let heap = self.ready_heap.lock().await;
+        println!("Scheduler report: {} tasks, {} ready", tasks.len(), heap.len());
+    }
 }
