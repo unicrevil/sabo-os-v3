@@ -144,7 +144,11 @@ pub struct Scheduler {
 }
 
 impl Scheduler {
-    pub fn new() -> (Self, mpsc::Receiver<Task>, mpsc::Receiver<TaskId>) {
+    pub fn new(pub fn dispatch_handles(
+    &self,
+) -> (Arc<Mutex<Vec<Task>>>, Arc<Mutex<BinaryHeap<HeapEntry>>>, Arc<Mutex<u64>>) {
+    (Arc::clone(&self.tasks), Arc::clone(&self.ready_heap), Arc::clone(&self.seq))
+}) -> (Self, mpsc::Receiver<Task>, mpsc::Receiver<TaskId>) {
         let (submit_tx, submit_rx) = mpsc::channel(256);
         let (cancel_tx, cancel_rx) = mpsc::channel(64);
 
