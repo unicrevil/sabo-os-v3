@@ -1,7 +1,8 @@
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 use std::collections::BinaryHeap;
-use sabo_os_v3::scheduler::{Scheduler, Priority, Task, HeapEntry};
+mod scheduler;
+use scheduler::{Scheduler, Priority, Task, HeapEntry};
 
 #[tokio::main]
 async fn main() {
