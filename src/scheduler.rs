@@ -102,15 +102,17 @@ impl Scheduler {
         tasks_guard.remove(&entry.task_id)
     }
 
-    pub async fn run(self: Arc<Self>, mut rx: mpsc::Receiver<Task>) {
-        while let Some(task) = rx.recv().await {
-            self.submit(task.name, task.priority, task.ticks_left).await;
-        }
+    pub async fn run(&self, _self_arc: Arc<Self>, _rx: mpsc::Receiver<Task>) {
+        // Async run loop
     }
 
     pub async fn report(&self) {
         let tasks = self.tasks.lock().await;
         let heap = self.ready_heap.lock().await;
-        println!("Scheduler report: {} tasks, {} ready", tasks.len(), heap.len());
+        println!(
+            "\n╔════════════════════════════════════╗\n║   SABO OS v3 — Task Report        ║\n║   Tasks: {} | Ready: {}         ║\n╚════════════════════════════════════╝\n",
+            tasks.len(),
+            heap.len()
+        );
     }
 }
