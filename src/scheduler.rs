@@ -284,14 +284,14 @@ impl Scheduler {
         println!("║        SABO OS v3 — Task Report          ║");
         println!("╠══════════════════════════════════════════╣");
         for t in ts.iter() {
-            println!(
-    "|| [{:>4}] {:<16} pri={:?} {:?}",
-    t.id, t.name, t.priority, t.state
-);
-        }
-        println!("╚══════════════════════════════════════════╝\n");
-    }
-}
+    println!(
+        "|| [{:>4}] {:<16} pri={:?} {:?}",
+        t.id, t.name, t.priority, t.state
+    );
+} // fecha for
+println!("╚═══════════\n");
+} // fecha pub fn report(&self)
+} // fecha impl Scheduler - ÚNICA CHAVE FINAL
 
 // ─────────────────────────────────────────
 // Testes Unitários
