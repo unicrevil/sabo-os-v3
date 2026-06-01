@@ -17,11 +17,10 @@ async fn main() {
     let sched_clone = Arc::clone(&sched);
     let heap_clone = Arc::clone(&heap);
     let seq_clone = Arc::clone(&seq);
-    
+   
     tokio::spawn(async move {
-        sched_clone.run(heap_clone, seq_clone, submit_rx, cancel_rx).await;
-    });
-
+    sched_clone.run(heap_clone, seq_clone, submit_rx, cancel_rx).await;
+});
     // Agora usa o sched original
     sched.submit("kernel_init", Priority::RealTime, 50).await;
     sched.submit("user_task", Priority::Normal, 20).await;
