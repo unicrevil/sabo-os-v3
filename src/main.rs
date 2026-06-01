@@ -15,8 +15,12 @@ async fn main() {
     });
 
     // Teste rápido
-    scheduler.submit("task1".to_string(), Priority::High, 10).await;
-    scheduler.submit("task2".to_string(), Priority::Normal, 5).await;
+    scheduler
+    .submit("task1".to_string(), Priority::High, 10)
+    .await;
+    scheduler
+    .submit("task2".to_string(), Priority::Normal, 5)
+    .await;
     
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
     scheduler.report().await;
