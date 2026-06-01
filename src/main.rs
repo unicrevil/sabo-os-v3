@@ -7,7 +7,7 @@ use tokio::sync::mpsc;
 #[tokio::main]
 async fn main() {
     let scheduler = Arc::new(Scheduler::new());
-    let (tx, rx) = mpsc::channel::<Task>(100);
+    let (_tx, rx) = mpsc::channel::<Task>(100);
 
     let sched_clone = Arc::clone(&scheduler);
     tokio::spawn(async move {
