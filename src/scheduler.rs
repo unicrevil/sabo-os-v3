@@ -69,7 +69,11 @@ impl Scheduler {
         *seq_guard += 1;
         drop(seq_guard);
 
-        let entry = HeapEntry { priority, seq: seq_val, task_id: id };
+        let entry = HeapEntry 
+            { priority, 
+             seq: seq_val, 
+             task_id: id 
+            };
 
         self.tasks.lock().await.insert(id, task);
         self.ready_heap.lock().await.push(entry); // ← MutexGuard tem push sim
