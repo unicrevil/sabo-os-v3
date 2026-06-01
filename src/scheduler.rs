@@ -66,15 +66,13 @@ impl Scheduler {
         let seq_val = *seq_guard;
         *seq_guard += 1;
         drop(seq_guard);
+        let entry = HeapEntry {
+         priority,
+         seq: seq_val,
+         task_id: id,
+      };
 
-        let entry = HeapEntry 
-            { priority, 
-             seq: seq_val, 
-             println!(
-    "Scheduler report: {} tasks, {} ready",
-    tasks.len(),
-    heap.len(),
-);
+     drop(id_guard);
     }
 
     pub async fn pop(&self) -> Option<Task> {
@@ -85,18 +83,16 @@ impl Scheduler {
         let mut tasks_guard = self.tasks.lock().await;
         tasks_guard.remove(&entry.task_id)
     }
-
-    pub async fn run(self: Arc<Self>, mut rx: mpsc::Receiver<Task>) {
+  pub async fn run(self: Arc<Self>, mut rx: mpsc::Receiver<Task>) {
         while let Some(task) = rx.recv().await {
             self.submit(task.name, task.priority, task.ticks_left).await;
         }
     }
 
-    pub async fn report(&self) {
-        let tasks = self.tasks.lock().await;
-        let heap = self.ready_heap.lock().await;
-        println!("Scheduler report: {} tasks, {} ready", tasks.len(), heap.len());
-    }
-  }   
+pub async fn report(&self) {
+    let tasks = self.tasks.lock().await;
+    let heap = self.ready_heap.lock().await;
+   println!("Scheduler report: {} tasks, {} ready", tasks.len(), heap.len());
+}
 }
 }
