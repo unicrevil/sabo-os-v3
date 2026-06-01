@@ -1,6 +1,6 @@
 mod scheduler;
 
-use scheduler::{HeapEntry, Priority, Scheduler, Task};
+use scheduler::{Priority, Scheduler, Task};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 
