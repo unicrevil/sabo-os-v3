@@ -28,22 +28,24 @@ pub struct HeapEntry {
 
 impl Ord for HeapEntry {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.priority.cmp(&self.priority)
-            .then_with(|| other.seq.cmp(&self.seq))
+    other
+        .priority
+        .cmp(&self.priority)
+        .then_with(|| other.seq.cmp(&self.seq))
     }
-}
 
 impl PartialOrd for HeapEntry {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
-    }
+    
 }
 
-pub struct Scheduler {
-    tasks: Mutex<HashMap<u64, Task>>,
-    ready_heap: Mutex<BinaryHeap<HeapEntry>>,
-    seq: Mutex<u64>,
-    next_id: Mutex<u64>,
+let task = Task {
+    id,
+    name,
+    priority,
+    ticks_left: ticks,
+};
 }
 
 impl Scheduler {
@@ -51,15 +53,11 @@ impl Scheduler {
         Self {
             tasks: Mutex::new(HashMap::new()),
             ready_heap: Mutex::new(BinaryHeap::new()),
-            seq: Mutex::new(0),
-            next_id: Mutex::new(1),
-        }
-    }
-
-    pub async fn submit(&self, name: String, priority: Priority, ticks: u32) -> u64 {
-        let mut id_guard = self.next_id.lock().await;
-        let id = *id_guard;
-        *id_guard += 1;
+            let entry = HeapEntry {
+    priority,
+    seq: seq_val,
+    task_id: id,
+};
         drop(id_guard);
 
         let task = Task { id, name, priority, ticks_left: ticks };
@@ -72,12 +70,11 @@ impl Scheduler {
         let entry = HeapEntry 
             { priority, 
              seq: seq_val, 
-             task_id: id 
-            };
-
-        self.tasks.lock().await.insert(id, task);
-        self.ready_heap.lock().await.push(entry); // ← MutexGuard tem push sim
-        id
+             println!(
+    "Scheduler report: {} tasks, {} ready",
+    tasks.len(),
+    heap.len(),
+);
     }
 
     pub async fn pop(&self) -> Option<Task> {
