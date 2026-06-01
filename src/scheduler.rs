@@ -97,4 +97,6 @@ impl Scheduler {
         let heap = self.ready_heap.lock().await;
         println!("Scheduler report: {} tasks, {} ready", tasks.len(), heap.len());
     }
-                              }
+  }   
+}
+}
